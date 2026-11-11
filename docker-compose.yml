@@ -13,8 +13,8 @@ services:
     restart: unless-stopped
     volumes:
       - ./:/app
-    ports:
-      - "8501:8501"
+    expose:
+      - "8501"
     command: >
       streamlit run dashboard.py
       --server.address 0.0.0.0
@@ -22,3 +22,21 @@ services:
       --browser.gatherUsageStats false
     depends_on:
       - bot
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: trading-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - dashboard
+
+volumes:
+  caddy_data:
+  caddy_config:

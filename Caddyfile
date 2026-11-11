@@ -1,0 +1,8 @@
+trading-etf.inversoft.tech {
+    basic_auth {
+        # usuario hash_bcrypt_de_la_contrasena
+        # genera el hash en el VPS con:
+        #   docker run --rm caddy:2-alpine caddy hash-password --plaintext 'TU_CONTRASENA'
+    }
+    reverse_proxy dashboard:8501
+}
