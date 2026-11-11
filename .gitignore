@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+.env
+state.json
+*.log
+trades.csv
+data/
+
+.idea/
+.vscode/

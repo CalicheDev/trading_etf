@@ -1,0 +1,24 @@
+services:
+  bot:
+    build: .
+    container_name: trading-bot
+    restart: unless-stopped
+    volumes:
+      - ./:/app
+    command: python bot.py
+
+  dashboard:
+    build: .
+    container_name: trading-dashboard
+    restart: unless-stopped
+    volumes:
+      - ./:/app
+    ports:
+      - "8501:8501"
+    command: >
+      streamlit run dashboard.py
+      --server.address 0.0.0.0
+      --server.headless true
+      --browser.gatherUsageStats false
+    depends_on:
+      - bot
