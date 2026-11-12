@@ -63,10 +63,13 @@ Esto arranca dos contenedores con reinicio automático (`restart: unless-stopped
 reiniciar el VPS si Docker está habilitado como servicio (`systemctl enable docker`):
 
 - `trading-bot`: el bucle del bot, corriendo de forma continua.
-- `trading-dashboard`: el panel en `http://<ip-del-vps>:8501`.
+- `trading-dashboard`: el panel, solo accesible dentro de la red interna de Docker (no expone puerto al host).
+- `caddy`: reverse proxy que sirve el dashboard por HTTPS en tu subdominio, con usuario/contraseña.
 
 `bot.db`, `bot.log` y `events.csv` se leen y escriben directamente en la carpeta del proyecto (montada
-como volumen), así que persisten entre reinicios y son compartidos por ambos contenedores.
+como volumen), así que persisten entre reinicios y son compartidos por ambos contenedores. **No están
+versionados en git** (ver `.gitignore`): son datos en vivo, no código, y versionarlos solo genera
+conflictos al hacer `git pull` en el VPS.
 
 Comandos útiles:
 
@@ -77,6 +80,23 @@ docker compose down                # detener todo
 docker compose up -d --build       # reconstruir tras cambiar el código o requirements.txt
 ```
 
-El dashboard no tiene autenticación: si el VPS es accesible públicamente, restringe el puerto 8501
-con el firewall a tu IP, o ponlo detrás de un reverse proxy (nginx/Caddy) con contraseña, en vez de
-exponerlo directamente a internet.
+### Dashboard con HTTPS y contraseña (subdominio + Caddy)
+
+El dashboard de Streamlit no tiene login propio, así que se expone detrás de Caddy con autenticación
+básica y certificado TLS automático (Let's Encrypt):
+
+1. En el DNS de tu dominio, crea un registro `A` para el subdominio (ej. `trading-etf`) que apunte a la
+   IP pública del VPS.
+2. Copia la plantilla y complétala con tu dominio y credenciales (este archivo **no se versiona**, cada
+   VPS tiene el suyo):
+   ```
+   cp Caddyfile.example Caddyfile
+   docker run --rm caddy:2-alpine caddy hash-password --plaintext 'TU_CONTRASENA'
+   # pega tu usuario y el hash resultante dentro de basic_auth en Caddyfile
+   ```
+3. Abre los puertos 80 y 443 en el firewall del VPS (y 8501 debe permanecer cerrado, ya no se usa):
+   ```
+   sudo ufw allow 80/tcp
+   sudo ufw allow 443/tcp
+   ```
+4. `docker compose up -d --build` y visita `https://tu-subdominio.tu-dominio.com`.

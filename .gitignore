@@ -6,8 +6,11 @@ venv/
 .env
 state.json
 *.log
+*.log.*
 trades.csv
 data/
+bot.db
+Caddyfile
 
 .idea/
 .vscode/
