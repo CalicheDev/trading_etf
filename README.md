@@ -82,8 +82,29 @@ docker compose up -d --build       # reconstruir tras cambiar el código o requi
 
 ### Dashboard con HTTPS y contraseña (subdominio + Caddy)
 
-El dashboard de Streamlit no tiene login propio, así que se expone detrás de Caddy con autenticación
-básica y certificado TLS automático (Let's Encrypt):
+El dashboard de Streamlit no tiene login propio, así que se expone por HTTPS con autenticación básica.
+Hay dos escenarios segun si el VPS ya tiene un reverse proxy corriendo para otros proyectos:
+
+**Si el VPS ya tiene otro Caddy ocupando los puertos 80/443** (por ejemplo otro stack de bots), no
+levantes un segundo Caddy — se agrega un bloque de sitio al que ya existe y se conecta este proyecto a
+su red de Docker:
+
+1. `docker network ls` para confirmar el nombre de la red externa (ej. `otro_proyecto_default`) y
+   agrégalo en `docker-compose.yml`, servicio `dashboard`, bajo `networks:` (ya viene configurado para
+   `tlbot_default` como ejemplo; cámbialo si tu red tiene otro nombre).
+2. En el Caddyfile del proxy existente (ej. `/root/otro_proyecto/Caddyfile`), agrega:
+   ```
+   trading-etf.tu-dominio.com {
+       basic_auth {
+           tu_usuario hash_bcrypt
+       }
+       reverse_proxy trading-dashboard:8501
+   }
+   ```
+3. Recarga ese Caddy sin downtime: `docker exec <nombre-del-contenedor-caddy> caddy reload --config /etc/caddy/Caddyfile`.
+
+**Si el VPS no tiene ningún reverse proxy todavía**, usa el Caddy independiente de este proyecto (plantilla
+en `Caddyfile.example`, ver historial de este README/repo para el servicio `caddy` en `docker-compose.yml`):
 
 1. En el DNS de tu dominio, crea un registro `A` para el subdominio (ej. `trading-etf`) que apunte a la
    IP pública del VPS.
@@ -100,3 +121,7 @@ básica y certificado TLS automático (Let's Encrypt):
    sudo ufw allow 443/tcp
    ```
 4. `docker compose up -d --build` y visita `https://tu-subdominio.tu-dominio.com`.
+
+En ambos casos, los contenedores llevan DNS público fijo (`8.8.8.8`, `1.1.1.1`) porque algunos VPS
+exponen el resolver interno de `systemd-resolved` (`127.0.0.53`), que no es alcanzable desde dentro de
+Docker y hace fallar la emisión de certificados o las consultas a APIs externas.
