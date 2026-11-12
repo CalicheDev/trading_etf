@@ -5,6 +5,9 @@ services:
     restart: unless-stopped
     volumes:
       - ./:/app
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     command: python bot.py
 
   dashboard:
@@ -13,6 +16,9 @@ services:
     restart: unless-stopped
     volumes:
       - ./:/app
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     expose:
       - "8501"
     command: >
@@ -27,6 +33,9 @@ services:
     image: caddy:2-alpine
     container_name: trading-caddy
     restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     ports:
       - "80:80"
       - "443:443"
